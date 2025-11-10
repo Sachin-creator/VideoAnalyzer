@@ -30,10 +30,11 @@ class VideoAnalyzer:
 
     def get_frames(self) -> List[Dict[str, Any]]:
         try:
+            # request media_type and stream_index so we can distinguish audio/video frames
             data = self._ffprobe_json([
-                "-select_streams", "v",
                 "-show_frames",
-                "-show_entries", "frame=pkt_pts_time,pkt_dts_time,pkt_duration_time,pts_time,dts_time"
+                "-show_entries",
+                "frame=media_type,stream_index,pkt_pts_time,pkt_dts_time,pkt_duration_time,pts_time,dts_time"
             ])
             return data.get("frames", [])
         except subprocess.CalledProcessError as e:
@@ -54,19 +55,22 @@ class VideoAnalyzer:
         print(f"File: {self.path}")
         print(f"Duration (seconds): {duration if duration is not None else 'N/A'}")
         frames = self.get_frames()
-        print("\nIndex\tPTS\t\tDTS\t\tDuration")
+        print("\nIndex\tStream\tType\tPTS\t\tDTS\t\tDuration")
         for i, f in enumerate(frames):
             if self.limit is not None and i >= self.limit:
                 break
+            stream_idx = f.get("stream_index", "N/A")
+            media_type = f.get("media_type", "unknown")
+            # prefer packet times, fall back to frame times
             pts = f.get("pkt_pts_time") or f.get("pts_time")
             dts = f.get("pkt_dts_time") or f.get("dts_time")
             dur = f.get("pkt_duration_time") or ""
-            print(f"{i}\t{self._fmt(pts)}\t{self._fmt(dts)}\t{self._fmt(dur)}")
+            print(f"{i}\t{stream_idx}\t{media_type}\t{self._fmt(pts)}\t{self._fmt(dts)}\t{self._fmt(dur)}")
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description="Print PTS, DTS and length of a video file using ffprobe.")
-    p.add_argument("paths", nargs="+", help="Video file(s) to analyze")
+    p = argparse.ArgumentParser(description="Print PTS, DTS and length of a media file using ffprobe (audio + video).")
+    p.add_argument("paths", nargs="+", help="File(s) to analyze")
     p.add_argument("--limit", type=int, help="Limit number of frames to print (optional)")
     args = p.parse_args(argv)
     for path in args.paths:
@@ -75,3 +79,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    main()
