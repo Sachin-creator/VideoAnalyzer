@@ -72,7 +72,24 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="Print PTS, DTS and length of a media file using ffprobe (audio + video).")
     p.add_argument("paths", nargs="+", help="File(s) to analyze")
     p.add_argument("--limit", type=int, help="Limit number of frames to print (optional)")
+    p.add_argument("--gui", action="store_true", help="Launch a GUI viewer that shows decoded frames with PTS/DTS and corresponding audio waveform")
     args = p.parse_args(argv)
+    # If GUI requested, import GUI module lazily so CLI still works without GUI deps
+    if args.gui:
+        try:
+            from . import gui_analyser as gui_mod
+        except Exception:
+            # fallback to top-level import for direct script execution
+            try:
+                import gui_analyser as gui_mod
+            except Exception as e:
+                print("Failed to import GUI module. Make sure dependencies (PySide6, av, numpy, matplotlib) are installed.")
+                print(e)
+                sys.exit(1)
+        # Launch GUI for the first path only (multi-file GUI not supported in this simple viewer)
+        gui_mod.launch_gui(args.paths[0])
+        return
+
     for path in args.paths:
         analyzer = VideoAnalyzer(path, limit=args.limit)
         analyzer.analyze()
