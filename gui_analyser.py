@@ -80,7 +80,10 @@ class WaveformCanvas(FigureCanvas):
             return
         t = np.linspace(start_time, start_time + samples.shape[-1] / sample_rate, samples.shape[-1])
         self.ax.plot(t, samples, linewidth=0.6)
-        self.ax.set_xlim(t[0], t[-1])
+        if t[0] == t[-1]:
+            self.ax.set_xlim(t[0] - 0.01, t[0] + 0.01)
+        else:
+            self.ax.set_xlim(t[0], t[-1])
         self.ax.set_ylim(-1.0, 1.0)
         self.ax.set_yticks([])
         self.ax.set_xlabel("Time (s)")
@@ -122,7 +125,10 @@ class WaveformCanvas(FigureCanvas):
         if marker_time is not None:
             self.ax.axvline(marker_time, color="r", linewidth=1.0)
 
-        self.ax.set_xlim(0, total / sample_rate)
+        if total == 1:
+            self.ax.set_xlim(0, 1.0 / sample_rate)
+        else:
+            self.ax.set_xlim(0, total / sample_rate)
         self.ax.set_ylim(-1.0, 1.0)
         self.ax.set_yticks([])
         self.ax.set_xlabel("Time (s)")
@@ -172,7 +178,7 @@ class VideoViewer(QWidget):
 
         # GUI elements
         self.video_label = QLabel("(no frame)")
-        self.video_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.video_label.setFixedSize(1280, 720)  # Prevents dynamic resizing and Wayland crash
         self.video_label.setAlignment(Qt.AlignCenter)
 
         self.info_label = QLabel("")
@@ -444,10 +450,13 @@ class VideoViewer(QWidget):
                 else:
                     tinfo.setText(f"{idx+1}\nPTS:N/A")
                 # waveform around pts
-                seg = self.get_audio_segment_for_pts(pts, win_s=0.2)
-                if seg.size > 0:
-                    # draw a small marker at pts for the thumbnail waveform
-                    twave.plot_segment(seg, self.audio_rate, start_time=max(0.0, pts - 0.1), marker_time=pts)
+                if pts is not None:
+                    seg = self.get_audio_segment_for_pts(pts, win_s=0.2)
+                    if seg.size > 0:
+                        # draw a small marker at pts for the thumbnail waveform
+                        twave.plot_segment(seg, self.audio_rate, start_time=max(0.0, pts - 0.1), marker_time=pts)
+                    else:
+                        twave.plot_segment(np.zeros((1,), dtype=np.float32), self.audio_rate, 0.0)
                 else:
                     twave.plot_segment(np.zeros((1,), dtype=np.float32), self.audio_rate, 0.0)
                 # highlight selected thumbnail
@@ -504,7 +513,9 @@ class VideoViewer(QWidget):
 def launch_gui(path: str):
     app = QApplication(sys.argv)
     viewer = VideoViewer(path)
-    viewer.resize(960, 640)
+    screen = app.primaryScreen()
+    size = screen.availableGeometry()
+    viewer.setGeometry(size)  # Set window to max available size
     viewer.show()
     sys.exit(app.exec())
 
