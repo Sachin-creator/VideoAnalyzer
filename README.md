@@ -39,7 +39,7 @@ From WSL / bash:
 From PowerShell:
 
 ```powershell
-.\tools\generate_sync_clip.ps1 -Out out_sync_test_loud.mp4 -Duration 5
+./tools/generate_sync_clip.ps1 -Out out_sync_test_loud.mp4 -Duration 5
 ```
 
 The script will print the created filenames. Play the file with `ffplay` to verify the flash+beep alignment.
@@ -57,13 +57,60 @@ From WSL / bash:
 From PowerShell:
 
 ```powershell
-.\tools\generate_sync_clip_safe.ps1 -Out out_sync_test_safe.mkv -Duration 5
+./tools/generate_sync_clip_safe.ps1 -Out out_sync_test_safe.mkv -Duration 5
 ```
 
 These create an MKV with PCM audio (more portable for debugging), plus a WAV and waveform PNG.
 
+Additional GUI setup
+--------------------
+The `video_analyzer_gui.py` tool provides a Tkinter-based GUI for MPEG-TS analysis and requires the following Python dependencies:
 
+- PySide6>=6.0
+- av
+- numpy
+- matplotlib
+- Pillow
+- opencv-python>=4.5
 
-Notes
------
-The GUI uses PySide6 for the UI, PyAV for decoding, numpy and matplotlib for waveform plotting. If you don't need the GUI, the original CLI analysis (prints PTS/DTS via ffprobe) remains available.
+Optional extras:
+- `pytesseract` for OCR support (requires system-installed Tesseract)
+- NDI support requires the NewTek NDI SDK and a compatible Python binding. See `NDI_README.md` for NDI setup instructions.
+
+Quick setup
+-----------
+1. Create and activate a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+2. Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run the GUI
+
+```bash
+python3 video_analyzer_gui.py
+```
+
+### Run the CLI analyser
+
+```bash
+python3 video_analyzer.py input.ts --json
+```
+
+Local dependencies used by the GUI
+----------------------------------
+- `video_analyzer.py`
+- `mp4_parser.py`
+- `scte35_validator.py`
+- `hevc_parser.py`
+- `buffer_analyzer.py`
+- `ndi_streamer.py` (optional)
+- `ndi_analysis.py` (optional)
+- `ndi_recorder.py` (optional)
