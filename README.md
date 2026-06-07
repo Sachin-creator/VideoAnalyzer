@@ -39,7 +39,7 @@ From WSL / bash:
 From PowerShell:
 
 ```powershell
-.	ools\generate_sync_clip.ps1 -Out out_sync_test_loud.mp4 -Duration 5
+./tools/generate_sync_clip.ps1 -Out out_sync_test_loud.mp4 -Duration 5
 ```
 
 The script will print the created filenames. Play the file with `ffplay` to verify the flash+beep alignment.
@@ -57,7 +57,7 @@ From WSL / bash:
 From PowerShell:
 
 ```powershell
-.	ools\generate_sync_clip_safe.ps1 -Out out_sync_test_safe.mkv -Duration 5
+./tools/generate_sync_clip_safe.ps1 -Out out_sync_test_safe.mkv -Duration 5
 ```
 
 These create an MKV with PCM audio (more portable for debugging), plus a WAV and waveform PNG.
