@@ -18,8 +18,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
 
       - name: Run a test script
         run: |
           echo "Runner is working!"
+          python3 - << 'EOF'
+          # (optional python commands can go here)
+          EOF
