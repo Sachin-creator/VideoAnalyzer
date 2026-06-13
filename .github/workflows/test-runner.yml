@@ -1,7 +1,11 @@
 name: Test Self-Hosted Runner
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - gui
+
 
 jobs:
   run-on-self-hosted:
