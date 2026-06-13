@@ -23,5 +23,3 @@ jobs:
       - name: Run a test script
         run: |
           echo "Runner is working!"
-          python3 - << 'EOF'
-EOF
