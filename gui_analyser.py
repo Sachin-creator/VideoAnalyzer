@@ -4,6 +4,7 @@
 Dependencies: PySide6, av (PyAV), numpy, matplotlib
 
 This module exposes launch_gui(path) which starts a Qt application window.
+Author: Sachin Chandrashekar
 """
 from __future__ import annotations
 import json
