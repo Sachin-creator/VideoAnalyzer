@@ -104,6 +104,24 @@ python3 video_analyzer_gui.py
 python3 video_analyzer.py input.ts --json
 ```
 
+RTMP / URL analyser
+-------------------
+
+You can inspect RTMP or other network streams using the lightweight ffprobe-based tool:
+
+```bash
+python3 rtmp_analyser.py rtmp://example/live/stream
+```
+
+SRT / URL analyser
+-------------------
+
+You can inspect SRT or other network streams similarly with the SRT analyser:
+
+```bash
+python3 srt_analyser.py srt://example:9000?streamid=someid
+```
+
 Local dependencies used by the GUI
 ----------------------------------
 - `video_analyzer.py`
