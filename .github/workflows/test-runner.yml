@@ -24,9 +24,11 @@ jobs:
             pip install -r requirements.txt
           fi
 
+
       - name: Run a test script
         run: |
           echo "Runner is working!"
           python3 - <<'PY'
           print("Hello from your self-hosted runner!")
           PY
+
