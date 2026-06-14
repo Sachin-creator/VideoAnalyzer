@@ -262,6 +262,13 @@ try:
 except Exception:
     RTMP_ANALYSER_AVAILABLE = False
 
+# Optional SRT analyser (ffprobe wrapper)
+try:
+    import srt_analyser
+    SRT_ANALYSER_AVAILABLE = True
+except Exception:
+    SRT_ANALYSER_AVAILABLE = False
+
 
 class TR101290ErrorClassifier:
     """Classifies errors according to TR101-290 Priority levels (ETSI TR 101 290 V1.2.1)"""
@@ -859,10 +866,24 @@ class TSAnalyserGUI:
         rtmp_frames_cb.grid(row=3, column=0, padx=8, pady=6, sticky=tk.W)
         rtmp_packets_cb = ttk.Checkbutton(dlg, text="Show packets", variable=rtmp_packets_var)
         rtmp_packets_cb.grid(row=3, column=1, padx=8, pady=6, sticky=tk.W)
+        # SRT options
+        srt_var = tk.BooleanVar(value=False)
+        srt_chk = ttk.Checkbutton(dlg, text="Use SRT Inspector (ffprobe)", variable=srt_var)
+        srt_chk.grid(row=4, column=0, columnspan=2, padx=8, pady=6, sticky=tk.W)
+        srt_frames_var = tk.BooleanVar(value=False)
+        srt_packets_var = tk.BooleanVar(value=False)
+        srt_frames_cb = ttk.Checkbutton(dlg, text="Show frames (SRT)", variable=srt_frames_var)
+        srt_frames_cb.grid(row=5, column=0, padx=8, pady=6, sticky=tk.W)
+        srt_packets_cb = ttk.Checkbutton(dlg, text="Show packets (SRT)", variable=srt_packets_var)
+        srt_packets_cb.grid(row=5, column=1, padx=8, pady=6, sticky=tk.W)
         if not RTMP_ANALYSER_AVAILABLE:
             rtmp_chk.state(['disabled'])
             rtmp_frames_cb.state(['disabled'])
             rtmp_packets_cb.state(['disabled'])
+        if not SRT_ANALYSER_AVAILABLE:
+            srt_chk.state(['disabled'])
+            srt_frames_cb.state(['disabled'])
+            srt_packets_cb.state(['disabled'])
         ttk.Label(dlg, text="Packets per snapshot").grid(row=2, column=0, padx=8, pady=6, sticky=tk.W)
         pkt_var = tk.StringVar(value="2000")
         ttk.Entry(dlg, textvariable=pkt_var, width=10).grid(row=2, column=1, padx=8, pady=6, sticky=tk.W)
@@ -882,6 +903,9 @@ class TSAnalyserGUI:
             if rtmp_var.get() and RTMP_ANALYSER_AVAILABLE:
                 # run RTMP inspector in background and show output
                 threading.Thread(target=self._run_rtmp_inspect, args=(url, rtmp_frames_var.get(), rtmp_packets_var.get()), daemon=True).start()
+                return
+            if srt_var.get() and SRT_ANALYSER_AVAILABLE:
+                threading.Thread(target=self._run_srt_inspect, args=(url, srt_frames_var.get(), srt_packets_var.get()), daemon=True).start()
                 return
             if ts_ring_var.get():
                 threading.Thread(target=self._url_ts_ring_capture, args=(url, pkt_snapshot, refresh_s), daemon=True).start()
@@ -1003,6 +1027,53 @@ class TSAnalyserGUI:
             self.root.after(0, lambda: self.status_label.config(text=f"RTMP inspect completed", foreground="green"))
         except Exception as e:
             self.root.after(0, self.show_error, f"RTMP inspect failed: {e}")
+            if win:
+                try:
+                    win.destroy()
+                except Exception:
+                    pass
+
+    def _run_srt_inspect(self, url: str, show_frames: bool, show_packets: bool):
+        """Run SRT/URL inspection via the bundled `srt_analyser` (ffprobe) and show output."""
+        if not SRT_ANALYSER_AVAILABLE:
+            self.root.after(0, lambda: self.show_error("SRT analyser not available (missing ffprobe or module)."))
+            return
+
+        def make_win():
+            w = tk.Toplevel(self.root)
+            w.title(f"SRT Inspector: {url}")
+            txt = scrolledtext.ScrolledText(w, width=100, height=40)
+            txt.pack(fill=tk.BOTH, expand=True)
+            return w, txt
+
+        win, txt = None, None
+        try:
+            self.root.after(0, lambda: self.status_label.config(text=f"Inspecting {url} with ffprobe...", foreground="orange"))
+            win, txt = make_win()
+            data = srt_analyser.ffprobe_json(url, ["-show_format", "-show_streams"]) or {}
+            out = {
+                "url": url,
+                "format": data.get("format"),
+                "streams": data.get("streams", []),
+            }
+            if show_frames:
+                frames = srt_analyser.ffprobe_json(url, ["-show_frames"]) or {}
+                out["frames"] = frames.get("frames", [])
+            if show_packets:
+                packets = srt_analyser.ffprobe_json(url, ["-show_packets"]) or {}
+                out["packets"] = packets.get("packets", [])
+
+            s = json.dumps(out, indent=2)
+            def write_text():
+                try:
+                    txt.delete('1.0', tk.END)
+                    txt.insert(tk.END, s)
+                except Exception:
+                    pass
+            self.root.after(0, write_text)
+            self.root.after(0, lambda: self.status_label.config(text=f"SRT inspect completed", foreground="green"))
+        except Exception as e:
+            self.root.after(0, self.show_error, f"SRT inspect failed: {e}")
             if win:
                 try:
                     win.destroy()
